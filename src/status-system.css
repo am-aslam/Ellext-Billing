@@ -1,0 +1,28 @@
+.status-filter-v2{display:flex;align-items:center;gap:3px;flex-wrap:wrap;background:#e7e4dd;border-radius:4px;padding:3px}
+.status-filter-v2 button{border:0;background:transparent;color:#7f7a71;font-size:11px;padding:7px 10px;border-radius:3px;white-space:nowrap}
+.status-filter-v2 button:hover{color:#302d27}
+.status-filter-v2 button.selected{background:#fffefa;color:#302d27;box-shadow:0 1px 2px #cfcac0}
+.status-table{min-width:1020px}
+.status-actions{flex-wrap:wrap;min-width:150px}
+.status-actions .text-button{font-size:10px}
+.modal-context{margin:0 0 18px;padding:10px 12px;background:#f7f4ed;border:1px solid #e8e2d8;font-size:12px;color:#6e685e}
+.modal-context .status{margin-left:6px}
+.modal-reason{margin-top:16px}
+.status-help-v2{display:none}
+.editor-table-v2{margin-top:20px;border:1px solid #e8e4da;border-radius:4px;overflow:hidden}
+.invoice-item-toolbar{display:flex;align-items:flex-end;gap:12px}
+.invoice-item-toolbar>label{flex:1}
+.invoice-item-toolbar .button{white-space:nowrap}
+.side-actions{flex-wrap:wrap}
+.side-actions .button{min-height:38px}
+.editor-row-v2{display:grid;grid-template-columns:minmax(0,1fr) 100px 130px 70px;gap:12px;align-items:end;padding:14px;border-top:1px solid #eeeae2}
+.editor-row-gst{grid-template-columns:minmax(0,1fr) 80px 120px 90px 70px}
+.editor-row-v2:first-child{border-top:0}
+.editor-row-v2>div{min-width:0}
+.editor-row-v2 strong,.editor-row-v2 small{display:block}
+.editor-row-v2 strong{font-size:12px}
+.editor-row-v2 small{font-size:10px;color:#969087;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.editor-row-v2 label{font-size:10px}
+.editor-row-v2 input{min-height:32px}
+.restore-wide{margin-top:18px}
+@media(max-width:760px){.status-filter-v2{width:100%;overflow-x:auto;flex-wrap:nowrap}.status-filter-v2 button{flex:none}.invoice-item-toolbar{align-items:stretch;flex-direction:column}.invoice-item-toolbar .button{width:100%}.editor-row-v2,.editor-row-gst{grid-template-columns:1fr 70px;gap:10px}.editor-row-v2 .text-button,.editor-row-gst .text-button{grid-column:2}.editor-row-v2 label:nth-of-type(2),.editor-row-gst label:nth-of-type(2){grid-column:1}.status-actions{min-width:130px}}

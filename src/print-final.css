@@ -1,0 +1,15 @@
+/* Final print contract. Keep this separate so responsive screen rules cannot shrink the paper. */
+@page{size:A4 portrait;margin:0}
+@media print{
+  html,body,#root{width:210mm!important;min-width:210mm!important;margin:0!important;padding:0!important;background:#fff!important}
+  .app-shell,.main-content,.modal-backdrop,.invoice-modal{display:block!important;width:210mm!important;min-width:210mm!important;max-width:210mm!important;margin:0!important;padding:0!important;background:#fff!important;overflow:visible!important;box-shadow:none!important;transform:none!important;zoom:1!important}
+  .sidebar,.topbar,.page-wrap,.modal-toolbar,.toast{display:none!important}
+  .main-content{display:none!important}
+  .invoice-page.invoice-document{display:flex!important;flex-direction:column!important;width:210mm!important;min-width:210mm!important;max-width:210mm!important;height:297mm!important;min-height:297mm!important;max-height:297mm!important;margin:0!important;padding:15mm!important;box-sizing:border-box!important;background:#fff!important;transform:none!important;zoom:1!important;box-shadow:none!important;overflow:hidden!important;page-break-after:auto!important;break-after:avoid-page!important;page-break-inside:avoid!important;break-inside:avoid-page!important}
+  .invoice-page.invoice-document .invoice-inner{display:flex!important;flex:1 1 auto!important;flex-direction:column!important;width:180mm!important;min-width:180mm!important;max-width:180mm!important;height:267mm!important;max-height:267mm!important;margin:0!important;padding:0!important;box-sizing:border-box!important;overflow:hidden!important;transform:none!important;zoom:1!important}
+  .invoice-page.invoice-document .invoice-head,.invoice-page.invoice-document .invoice-parties,.invoice-page.invoice-document .place-supply,.invoice-page.invoice-document .invoice-items,.invoice-page.invoice-document .invoice-bottom,.invoice-page.invoice-document .signature{width:180mm!important;max-width:180mm!important;box-sizing:border-box!important}
+  .invoice-page.invoice-document .invoice-items{table-layout:fixed!important;border-collapse:collapse!important}
+  .invoice-page.invoice-document .invoice-items thead{display:table-header-group!important}
+  .invoice-page.invoice-document .invoice-items tr,.invoice-page.invoice-document .invoice-bottom,.invoice-page.invoice-document .signature{break-inside:avoid!important;page-break-inside:avoid!important}
+  .invoice-page.invoice-document .invoice-items{break-inside:avoid!important;page-break-inside:avoid!important}
+}

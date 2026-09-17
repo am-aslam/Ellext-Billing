@@ -1,0 +1,21 @@
+/* Keep the seal in the authorization block, never in the totals area. */
+.invoice-authorization{position:relative;flex:none;margin-top:16mm;padding-top:0;min-height:40mm;border-top:0;display:flex;justify-content:space-between;align-items:flex-end;gap:18mm;width:100%;box-sizing:border-box;break-inside:avoid;page-break-inside:avoid}
+.invoice-footer-notes{display:flex;flex-direction:column;gap:5px}
+.invoice-footer-notes span{font-size:9.5pt}
+.invoice-footer-notes small{font-size:8.5pt;color:#9a948a}
+.invoice-signature{position:relative;width:52mm;min-height:40mm;padding-top:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;box-sizing:border-box;break-inside:avoid;page-break-inside:avoid}
+.invoice-signature img{position:absolute;bottom:7mm;left:50%;transform:translateX(-50%);display:block;width:25mm;height:25mm;object-fit:contain;aspect-ratio:1/1;margin:0}
+.invoice-signature .signature-line{width:48mm;height:8mm;border-bottom:1px solid #35322d;box-sizing:border-box}
+.invoice-signature small{font-size:8.5pt;color:#9a948a}
+.toggle-field{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:20px;padding:12px 0;border-top:1px solid #e7e3da;border-bottom:1px solid #e7e3da;margin-top:24px;font-size:12px;color:#4d4840}
+.toggle-field input{width:18px;height:18px;min-height:18px;accent-color:#8d7652}
+.invoice-page.invoice-document .invoice-authorization{width:100%;max-width:none}
+.invoice-page.invoice-document .invoice-footer-notes,.invoice-page.invoice-document .invoice-signature{box-sizing:border-box}
+@media print{
+  .invoice-page.invoice-document .invoice-authorization{width:180mm!important;max-width:180mm!important;margin-top:12mm!important;min-height:40mm!important;flex:none!important;border-top:0!important;break-inside:avoid!important;page-break-inside:avoid!important}
+  .invoice-page.invoice-document .invoice-signature{min-height:40mm!important;padding-top:0!important}
+  .invoice-page.invoice-document .invoice-signature img{width:25mm!important;height:25mm!important;max-width:25mm!important;bottom:7mm!important;top:auto!important;object-fit:contain!important}
+  .invoice-page.invoice-document .invoice-footer-notes span{font-size:9.5pt}
+  .invoice-page.invoice-document .invoice-footer-notes small,.invoice-page.invoice-document .invoice-signature small{font-size:8.5pt}
+}
+@media(max-width:760px){.invoice-authorization{gap:10mm}.invoice-signature{width:43mm;min-height:34mm;padding-top:0}.invoice-signature img{width:22mm;height:22mm;bottom:6mm}.invoice-signature .signature-line{width:40mm}}
