@@ -42,7 +42,7 @@ router.post('/signup', authLimiter, async (req: Request, res: Response): Promise
     const { error: profileError } = await admin.from('profiles').insert({ id: created.user.id, email: parsed.data.email, full_name: parsed.data.name, role: 'STAFF', status: 'ACTIVE', email_verified: true });
     if (profileError) { await admin.auth.admin.deleteUser(created.user.id); throw profileError; }
     await audit(admin, { user_id: created.user.id, action: 'SIGNUP', entity: 'USER', entity_id: created.user.id, ip_address: req.ip }); res.status(201).json({ success: true, data: { requiresLogin: true, message: 'Account created. Sign in with your email and password.' } });
-  } catch (error) { console.error('auth signup failed', error); res.status(503).json({ success: false, error: { code: 'AUTH_UNAVAILABLE', message: 'We could not send a verification code. Please try again.' } }); }
+  } catch (error) { console.error('auth signup failed', error); res.status(503).json({ success: false, error: { code: 'AUTH_UNAVAILABLE', message: 'We could not create the account. Check the Supabase connection and Auth configuration, then try again.' } }); }
 });
 
 router.post('/login', authLimiter, async (req: Request, res: Response): Promise<void> => {

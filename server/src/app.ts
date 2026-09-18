@@ -30,6 +30,12 @@ export const createApp = (): express.Express => {
   app.use('/api/auth', authRoutes);
   app.use('/auth', authRoutes);
   app.use((_req, res) => res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Not found.' } }));
-  app.use((_error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Something went wrong. Please try again.' } }));
+  app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    if (error instanceof SyntaxError && 'body' in error) {
+      res.status(400).json({ success: false, error: { code: 'INVALID_JSON', message: 'The request body must be valid JSON.' } });
+      return;
+    }
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Something went wrong. Please try again.' } });
+  });
   return app;
 };
