@@ -39,9 +39,9 @@ The setup command creates a real Supabase Auth user and profile; there are no de
 
 ## Vercel deployment
 
-- Deploy the Vite client with build command `npm run build` and output directory `dist`.
-- Set `VITE_API_URL` to the public URL of the deployed API followed by `/api`.
-- Deploy the Express API separately as a Node service or Vercel Express project, then set `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `COOKIE_SECRET`, `APP_URL`, and `CORS_ORIGIN` in that deployment. Never commit `.env`.
+- `vercel.json` deploys the Vite client from `dist` and routes `/api/*` to the Express function in `api/index.ts`.
+- Set `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `COOKIE_SECRET`, `APP_URL`, and `CORS_ORIGIN` as Vercel project environment variables. Set `VITE_API_URL` to `/api` or leave it unset so the client uses the same-origin API.
+- Never commit `.env` or expose `SUPABASE_SECRET_KEY` to the browser.
 
 ## Reference format
 
