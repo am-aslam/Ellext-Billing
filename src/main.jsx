@@ -359,6 +359,7 @@ function AuthGate({ children }) {
     const payload = await response.json().catch(() => ({}));
     const message = payload.error?.message || payload.message || fallback;
     if (response.status === 404) return 'The billing API signup route is unavailable. Restart the API server and try again.';
+    if (response.status >= 500 && !payload.error?.message && !payload.message) return 'The billing API is unavailable on Vercel. Add the required environment variables to the Vercel project and redeploy.';
     if (payload.error?.code === 'SIGNUP_FAILED' && message === 'We could not create the account. Please try again.') return 'The API server is using an older version. Restart the billing API and refresh this page.';
     return message;
   };

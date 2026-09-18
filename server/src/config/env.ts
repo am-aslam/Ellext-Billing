@@ -2,7 +2,6 @@ import 'dotenv/config';
 
 const required = (name: string): string => {
   const value = process.env[name];
-  if (!value && process.env.NODE_ENV === 'production') throw new Error(`${name} is required in production`);
   return value || '';
 };
 
@@ -18,3 +17,10 @@ export const env = {
 };
 
 export const isProduction = env.nodeEnv === 'production';
+
+// Keep the function loadable when a Vercel environment variable is missing.
+// The API can then return a useful JSON configuration error instead of making
+// Vercel return its opaque HTML runtime-error page.
+export const missingProductionEnv = isProduction
+  ? ['SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY', 'SUPABASE_SECRET_KEY', 'COOKIE_SECRET'].filter((name) => !process.env[name])
+  : [];
