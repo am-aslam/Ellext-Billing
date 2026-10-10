@@ -53,6 +53,50 @@ img, svg, video { max-width: 100%; }
   .invoice-dates label { flex-basis: 100%; }
 }
 
+/* Invoice preview: reflow the A4 document for phones instead of clipping its
+   fixed-width print canvas. Print rules below retain the full A4 layout. */
+@media screen and (max-width: 760px) {
+  body:has(.invoice-modal) { overflow: hidden; }
+  .modal-backdrop:has(.invoice-modal) { padding: 0; align-items: stretch; }
+  .invoice-modal { width: 100%; max-width: 100%; height: 100dvh; min-height: 0; border-radius: 0; overflow: auto; }
+  .invoice-modal .modal-toolbar { position: sticky; top: 0; height: auto; min-height: 54px; padding: 8px 10px; gap: 6px; }
+  .invoice-modal .modal-toolbar > div { gap: 0; }
+  .invoice-modal .modal-toolbar .button { min-height: 36px; padding: 0 8px; font-size: 11px; }
+  .invoice-page.invoice-document { width: 100% !important; min-width: 0 !important; max-width: 100% !important; min-height: 0 !important; height: auto !important; margin: 0 !important; padding: 20px 16px 24px !important; overflow: visible !important; transform: none !important; zoom: 1 !important; box-shadow: none !important; }
+  .invoice-page.invoice-document .invoice-inner { display: flex; width: 100% !important; min-width: 0 !important; max-width: 100% !important; height: auto !important; max-height: none !important; flex: none; overflow: visible !important; }
+  .invoice-page.invoice-document .invoice-head { width: 100% !important; min-height: 0; flex-wrap: wrap; gap: 16px; padding-bottom: 16px; }
+  .invoice-page.invoice-document .invoice-brand { flex: 1 1 100%; min-width: 0; gap: 10px; }
+  .invoice-page.invoice-document .invoice-brand img { width: 78px; height: 30px; }
+  .invoice-page.invoice-document .invoice-brand-copy { min-width: 0; }
+  .invoice-page.invoice-document .invoice-brand-copy strong { font-size: 14px; }
+  .invoice-page.invoice-document .invoice-brand-copy span { font-size: 10px; }
+  .invoice-page.invoice-document .invoice-meta { width: 100%; text-align: left; display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; }
+  .invoice-page.invoice-document .invoice-meta span { grid-column: 1 / -1; font-size: 22px; }
+  .invoice-page.invoice-document .invoice-meta strong { grid-column: 1 / -1; margin: 0 0 4px; }
+  .invoice-page.invoice-document .invoice-meta small { font-size: 10px; overflow-wrap: anywhere; }
+  .invoice-page.invoice-document .invoice-parties { width: 100% !important; min-height: 0; grid-template-columns: minmax(0, 1fr) !important; gap: 18px; padding: 18px 0; }
+  .invoice-page.invoice-document .invoice-parties span { overflow-wrap: anywhere; }
+  .invoice-page.invoice-document .place-supply { width: 100% !important; gap: 8px; align-items: flex-start; }
+  .invoice-page.invoice-document .place-supply strong { text-align: right; }
+  .invoice-page.invoice-document .invoice-items { display: block; width: 100% !important; margin-top: 18px; table-layout: fixed; }
+  .invoice-page.invoice-document .invoice-items thead { display: none; }
+  .invoice-page.invoice-document .invoice-items tbody { display: block; width: 100%; }
+  .invoice-page.invoice-document .invoice-items tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; width: 100%; padding: 10px 0; border-bottom: 1px solid #e7e4de; }
+  .invoice-page.invoice-document .invoice-items td { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; width: auto !important; min-width: 0; padding: 5px 2px; border: 0; text-align: right !important; font-size: 11px; overflow-wrap: anywhere; }
+  .invoice-page.invoice-document .invoice-items td::before { flex: 0 0 auto; color: #89847a; font-size: 9px; text-align: left; }
+  .invoice-page.invoice-document .invoice-items td:nth-child(1) { display: none; }
+  .invoice-page.invoice-document .invoice-items td:nth-child(2) { grid-column: 1 / -1; display: block; text-align: left !important; font-size: 12px; }
+  .invoice-page.invoice-document .invoice-items td:nth-child(2)::before { content: 'DESCRIPTION'; display: block; margin-bottom: 4px; }
+  .invoice-page.invoice-document .invoice-items td:nth-child(3)::before { content: 'HSN/SAC'; }
+  .invoice-page.invoice-document .invoice-items td:nth-child(4)::before { content: 'QTY'; }
+  .invoice-page.invoice-document .invoice-items td:nth-child(5)::before { content: 'RATE'; }
+  .invoice-page.invoice-document .invoice-items td:nth-child(6)::before { content: 'AMOUNT'; }
+  .invoice-page.invoice-document .invoice-bottom { width: 100% !important; min-height: 0; grid-template-columns: minmax(0, 1fr) !important; gap: 18px; padding-top: 20px; }
+  .invoice-page.invoice-document .invoice-summary { padding-left: 0 !important; }
+  .invoice-page.invoice-document .invoice-authorization { width: 100%; flex-wrap: wrap; gap: 22px; padding-top: 20px; }
+  .invoice-page.invoice-document .invoice-signature { width: 150px; max-width: 45%; }
+}
+
 /* Print contract: print only the mounted invoice and keep it to one A4 sheet. */
 @page { size: A4 portrait; margin: 0; }
 @media print {
