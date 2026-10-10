@@ -16,6 +16,7 @@ const code = z.string().regex(/^\d{6}$/);
 const genericLoginError = 'Unable to sign in with those credentials.';
 const signupErrorResponse = (error: { message?: string; status?: number } | null | undefined): { status: number; message: string } => {
   const message = String(error?.message || '').toLowerCase();
+  if (message.includes('fetch failed') || message.includes('network') || message.includes('enotfound')) return { status: 503, message: 'Supabase could not be reached. In Vercel, set SUPABASE_URL and both Supabase keys from the same active project, then redeploy.' };
   if (message.includes('already') || message.includes('registered') || message.includes('exists')) return { status: 409, message: 'An account with this email already exists. Please sign in instead.' };
   if (message.includes('invalid') && message.includes('email')) return { status: 400, message: 'Enter a valid email address.' };
   if (message.includes('password')) return { status: 400, message: 'Choose a stronger password. Avoid common or previously leaked passwords.' };
@@ -53,7 +54,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response): Promise<
     await auth.auth.signOut();
     const { data: profile } = await admin.from('profiles').select('id,email,full_name,role,status').eq('id', result.user.id).maybeSingle(); if (!profile || profile.status !== 'ACTIVE') { res.status(401).json({ success: false, error: { code: 'INVALID_CREDENTIALS', message: genericLoginError } }); return; }
     await createApplicationSession(admin, profile.id, req, res); res.json({ success: true, data: { authenticated: true, user: profile } });
-  } catch (error) { console.error('auth login failed', error); res.status(503).json({ success: false, error: { code: 'AUTH_UNAVAILABLE', message: 'We could not sign you in. Please try again.' } }); }
+  } catch (error) { console.error('auth login failed', error); const detail = String((error as { message?: string })?.message || '').toLowerCase(); const message = detail.includes('fetch failed') || detail.includes('network') || detail.includes('enotfound') ? 'Supabase could not be reached. Verify the Vercel Supabase URL and keys, then redeploy.' : 'We could not sign you in. Please try again.'; res.status(503).json({ success: false, error: { code: 'AUTH_UNAVAILABLE', message } }); }
 });
 
 router.post('/verify-code', authLimiter, async (req: Request, res: Response): Promise<void> => {
