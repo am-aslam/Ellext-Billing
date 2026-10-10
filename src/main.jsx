@@ -221,7 +221,18 @@ const statusV2Lifecycle = (record) => String(record?.status || (record?.archived
 const statusV2InvoiceKey = (value) => { const key = String(value || '').toUpperCase().replaceAll(' ', '_'); return key === 'PARTIALLYPAID' ? 'PARTIALLY_PAID' : ({ DRAFT: 'DRAFT', ISSUED: 'ISSUED', PENDING: 'PENDING', PARTIALLY_PAID: 'PARTIALLY_PAID', PAID: 'PAID', OVERDUE: 'OVERDUE', CANCELLED: 'CANCELLED' }[key] || 'DRAFT'); };
 const statusV2Today = () => new Date().toISOString().slice(0, 10);
 const statusV2PaymentTotal = (payments, invoiceId) => (payments || []).filter((p) => p.invoiceId === invoiceId && String(p.status || 'COMPLETED').toUpperCase() === 'COMPLETED').reduce((sum, p) => sum + Number(p.amount || 0), 0);
-const statusV2DerivedInvoiceStatus = (invoice) => statusV2InvoiceKey(invoice.status);
+const statusV2DerivedInvoiceStatus = (invoice, calc) => {
+  const base = statusV2InvoiceKey(invoice.status);
+  if (base === 'CANCELLED' || base === 'DRAFT') return base;
+  const total = Number(calc?.total ?? invoice.total ?? 0);
+  const paid = Number(calc?.paid ?? invoice.paid ?? 0);
+  const balance = Math.max(0, total - paid);
+  if (total > 0 && paid >= total - 0.01) return 'PAID';
+  if (paid > 0 && balance > 0.01) return 'PARTIALLY_PAID';
+  if (base === 'PAID' || base === 'PARTIALLY_PAID') return base === 'PAID' ? 'PAID' : 'PENDING';
+  if (base !== 'OVERDUE' && invoice.dueDate && new Date(invoice.dueDate) < new Date(`${statusV2Today()}T00:00:00`)) return 'OVERDUE';
+  return base;
+};
 const statusV2NormalizeData = (raw) => {
   const source = raw || seed;
   const customers = (source.customers || []).map((c) => { const status = statusV2Lifecycle(c); return { ...c, status, active: status === 'ACTIVE', archived: status === 'ARCHIVED' }; });
@@ -232,7 +243,7 @@ const statusV2NormalizeData = (raw) => {
     const customer = customerMap[invoice.customerId] || invoice.customer || {};
     const paid = statusV2PaymentTotal(payments, invoice.id);
     const calc = calculate({ ...invoice, customerStateCode: customer.stateCode, paid });
-    return { ...invoice, customerId: invoice.customerId || customer.id, customer: invoice.customer || { ...customer }, status: statusV2DerivedInvoiceStatus(invoice) };
+    return { ...invoice, customerId: invoice.customerId || customer.id, customer: invoice.customer || { ...customer }, status: statusV2DerivedInvoiceStatus(invoice, calc) };
   });
   return { ...source, settings: { ...seed.settings, ...(source.settings || {}) }, customers, services, invoices, payments, auditLog: source.auditLog || [] };
 };
@@ -286,7 +297,7 @@ const statusV2Rows = (data) => {
     const customer = customerMap[invoice.customerId] || invoice.customer || {};
     const paid = statusV2PaymentTotal(data.payments, invoice.id);
     const calc = calculate({ ...invoice, customerStateCode: customer.stateCode, paid });
-    return { ...invoice, customer, calc, status: statusV2DerivedInvoiceStatus(invoice) };
+    return { ...invoice, customer, calc, status: statusV2DerivedInvoiceStatus(invoice, calc) };
   });
 };
 const statusV2Audit = (data, entity, entityId, previousStatus, newStatus, reason = '') => [...(data.auditLog || []), { id: `AUD-${Date.now()}`, user: 'Authenticated user', entity, entityId, previousStatus, newStatus, reason, timestamp: new Date().toISOString() }];
