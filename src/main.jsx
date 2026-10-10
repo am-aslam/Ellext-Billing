@@ -207,6 +207,12 @@ function BackupV2({ data, setData, notify, invoices }) { const [restoreInfo, set
 
 function Settings({ data, update, notify }) { const [form, setForm] = useState(data.settings); const set = (k, v) => setForm((f) => ({ ...f, [k]: v })); const save = () => { update('settings', form); notify('Business settings saved'); }; return <><PageHeader eyebrow="Workspace configuration" title="Settings" description="Your business profile travels with every invoice." action={<Button onClick={save}>Save changes</Button>} /><section className="settings-layout"><div className="settings-nav"><button className="selected"><Store size={16} /> Business profile</button><button><Receipt size={16} /> Invoice settings</button><button><ShieldCheck size={16} /> Security</button></div><section className="panel settings-panel"><div className="settings-heading"><div className="settings-logo"><img src={logo} alt="Ellext Marketing" /></div><div><h2>Business profile</h2><p>Shown on invoices and client-facing documents.</p></div></div><div className="form-grid two">{[['businessName','Business name'],['legalName','Legal name'],['gstin','GSTIN'],['pan','PAN'],['address','Address'],['place','Place'],['city','City'],['district','District'],['state','State'],['stateCode','State code'],['pin','PIN'],['phone','Phone'],['email','Email'],['website','Website']].map(([k,l]) => <label key={k}>{l}<input value={form[k] || ''} onChange={(e) => set(k, e.target.value)} /></label>)}<label>Default GST rate<select value={form.defaultGst} onChange={(e) => set('defaultGst', e.target.value)}><option>0</option><option>5</option><option>12</option><option>18</option><option>28</option></select></label><label>Payment terms (days)<input type="number" value={form.terms} onChange={(e) => set('terms', e.target.value)} /></label><label className="full">Default notes<textarea rows="3" value={form.defaultNotes} onChange={(e) => set('defaultNotes', e.target.value)} /></label></div><div className="settings-subsection"><h3>Invoice numbering</h3><p>Automatic sequence for the current financial year.</p><div className="form-grid three"><label>Prefix<input value={form.prefix} onChange={(e) => set('prefix', e.target.value)} /></label><label>Financial year<input value={form.financialYear} onChange={(e) => set('financialYear', e.target.value)} /></label><label>Currency<input value={form.currency} onChange={(e) => set('currency', e.target.value)} /></label></div></div></section></section></>; }
 
+const SettingsWithAccount = Settings;
+Settings = function SettingsAccountSection(props) {
+  const signOut = () => window.dispatchEvent(new Event('ellext-auth-logout-request'));
+  return <><SettingsWithAccount {...props} /><section className="panel settings-panel account-session-panel"><div><h2>Account</h2><p>Sign out of your Ellext Marketing billing workspace on this device.</p></div><Button variant="secondary" onClick={signOut}>Log out</Button></section></>;
+};
+
 function FormModal({ title, onClose, onSave, children }) { return <div className="modal-backdrop" onClick={onClose}><div className="form-modal" onClick={(e) => e.stopPropagation()}><div className="form-modal-head"><div><h2>{title}</h2><p>Fields marked by context are saved to your workspace.</p></div><button className="icon-button" onClick={onClose}><X size={18} /></button></div><div className="form-modal-body">{children}</div><div className="form-modal-foot"><Button variant="quiet" onClick={onClose}>Cancel</Button><Button onClick={onSave}>Save</Button></div></div></div>; }
 function ConfirmModal({ title, message, confirmLabel = 'Confirm', onClose, onConfirm }) { return <div className="modal-backdrop" onClick={onClose}><div className="confirm-modal" onClick={(e) => e.stopPropagation()}><div className="confirm-mark"><Archive size={18} /></div><h2>{title}</h2><p>{message}</p><div className="form-modal-foot"><Button variant="quiet" onClick={onClose}>Keep it</Button><Button variant="secondary" onClick={onConfirm}>{confirmLabel}</Button></div></div></div>; }
 
@@ -420,7 +426,9 @@ function AuthGate({ children }) {
       .catch(() => setState('login'));
     const logout = () => setState('login');
     window.addEventListener('ellext-auth-logout', logout);
-    return () => window.removeEventListener('ellext-auth-logout', logout);
+    const requestLogout = () => { fetch(`${api}/auth/logout`, { method: 'POST', credentials: 'include' }).finally(() => window.dispatchEvent(new Event('ellext-auth-logout'))); };
+    window.addEventListener('ellext-auth-logout-request', requestLogout);
+    return () => { window.removeEventListener('ellext-auth-logout', logout); window.removeEventListener('ellext-auth-logout-request', requestLogout); };
   }, [api]);
 
   const showMode = (nextMode) => {
