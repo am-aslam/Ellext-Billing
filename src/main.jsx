@@ -44,7 +44,7 @@ const seed = {
 const LIVE_DATA_VERSION = 'live-user-v1';
 
 function calculate(invoice) {
-  const lineAmount = (item) => item.amount !== undefined && item.amount !== '' ? Number(item.amount || 0) : Number(item.qty || 0) * Number(item.rate || 0);
+  const lineAmount = (item) => { const amount = Number(item.amount); const rateTotal = Number(item.qty || 0) * Number(item.rate || 0); return item.amount !== undefined && item.amount !== '' && (amount > 0 || rateTotal === 0) ? amount : rateTotal; };
   const subtotal = (invoice.items || []).reduce((sum, item) => sum + lineAmount(item), 0);
   const discount = Math.min(Number(invoice.discount || 0), subtotal);
   const taxable = subtotal - discount;
