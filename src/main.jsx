@@ -221,6 +221,12 @@ const statusV2Lifecycle = (record) => String(record?.status || (record?.archived
 const statusV2InvoiceKey = (value) => { const key = String(value || '').toUpperCase().replaceAll(' ', '_'); return key === 'PARTIALLYPAID' ? 'PARTIALLY_PAID' : ({ DRAFT: 'DRAFT', ISSUED: 'ISSUED', PENDING: 'PENDING', PARTIALLY_PAID: 'PARTIALLY_PAID', PAID: 'PAID', OVERDUE: 'OVERDUE', CANCELLED: 'CANCELLED' }[key] || 'DRAFT'); };
 const statusV2Today = () => new Date().toISOString().slice(0, 10);
 const statusV2PaymentTotal = (payments, invoiceId) => (payments || []).filter((p) => p.invoiceId === invoiceId && String(p.status || 'COMPLETED').toUpperCase() === 'COMPLETED').reduce((sum, p) => sum + Number(p.amount || 0), 0);
+const statusV2CalculateInvoice = (invoice, customer, payments) => {
+  const paymentTotal = statusV2PaymentTotal(payments, invoice.id);
+  const baseCalc = calculate({ ...invoice, customerStateCode: customer?.stateCode, paid: paymentTotal });
+  const paid = statusV2InvoiceKey(invoice.status) === 'PAID' ? baseCalc.total : Math.min(paymentTotal, baseCalc.total);
+  return calculate({ ...invoice, customerStateCode: customer?.stateCode, paid });
+};
 const statusV2DerivedInvoiceStatus = (invoice, calc) => {
   const base = statusV2InvoiceKey(invoice.status);
   if (base === 'CANCELLED' || base === 'DRAFT') return base;
@@ -241,8 +247,7 @@ const statusV2NormalizeData = (raw) => {
   const payments = (source.payments || []).map((p) => ({ ...p, status: String(p.status || 'COMPLETED').toUpperCase() }));
   const invoices = (source.invoices || []).map((invoice) => {
     const customer = customerMap[invoice.customerId] || invoice.customer || {};
-    const paid = statusV2PaymentTotal(payments, invoice.id);
-    const calc = calculate({ ...invoice, customerStateCode: customer.stateCode, paid });
+    const calc = statusV2CalculateInvoice(invoice, customer, payments);
     return { ...invoice, customerId: invoice.customerId || customer.id, customer: invoice.customer || { ...customer }, status: statusV2DerivedInvoiceStatus(invoice, calc) };
   });
   return { ...source, settings: { ...seed.settings, ...(source.settings || {}) }, customers, services, invoices, payments, auditLog: source.auditLog || [] };
@@ -295,8 +300,7 @@ const statusV2Rows = (data) => {
   const customerMap = Object.fromEntries(data.customers.map((c) => [c.id, c]));
   return data.invoices.map((invoice) => {
     const customer = customerMap[invoice.customerId] || invoice.customer || {};
-    const paid = statusV2PaymentTotal(data.payments, invoice.id);
-    const calc = calculate({ ...invoice, customerStateCode: customer.stateCode, paid });
+    const calc = statusV2CalculateInvoice(invoice, customer, data.payments);
     return { ...invoice, customer, calc, status: statusV2DerivedInvoiceStatus(invoice, calc) };
   });
 };
