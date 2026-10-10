@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.routes.js';
+import workspaceRoutes from './routes/workspace.routes.js';
 import { env, missingProductionEnv } from './config/env.js';
 
 export const createApp = (): express.Express => {
@@ -29,6 +30,8 @@ export const createApp = (): express.Express => {
   app.get('/ready', (_req, res) => res.json({ status: 'ok' }));
   app.use('/api/auth', authRoutes);
   app.use('/auth', authRoutes);
+  app.use('/api/workspace', workspaceRoutes);
+  app.use('/workspace', workspaceRoutes);
   app.use((_req, res) => res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Not found.' } }));
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     if (error instanceof SyntaxError && 'body' in error) {

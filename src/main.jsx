@@ -237,11 +237,48 @@ const statusV2NormalizeData = (raw) => {
   return { ...source, settings: { ...seed.settings, ...(source.settings || {}) }, customers, services, invoices, payments, auditLog: source.auditLog || [] };
 };
 function useBillingStoreV2() {
-  const [data, setData] = useState(() => { try { if (localStorage.getItem('ellext-billing-data-version') !== LIVE_DATA_VERSION) { localStorage.removeItem('ellext-billing-data'); localStorage.removeItem('ellext-invoice-draft'); localStorage.setItem('ellext-billing-data-version', LIVE_DATA_VERSION); } return statusV2NormalizeData(JSON.parse(localStorage.getItem('ellext-billing-data')) || seed); } catch { return statusV2NormalizeData(seed); } });
-  useEffect(() => localStorage.setItem('ellext-billing-data', JSON.stringify(data)), [data]);
-  const commit = (next) => setData(statusV2NormalizeData(next));
-  const update = (key, value) => setData((current) => statusV2NormalizeData({ ...current, [key]: value }));
-  return { data, commit, update };
+  const api = import.meta.env.VITE_API_URL || '/api';
+  const [data, setData] = useState(statusV2NormalizeData(seed));
+  const [loading, setLoading] = useState(true);
+  const [syncError, setSyncError] = useState('');
+  const readLocal = () => { try { const stored = JSON.parse(localStorage.getItem('ellext-billing-data')); return stored ? statusV2NormalizeData(stored) : null; } catch { return null; } };
+  const hasLocalRecords = (value) => Boolean(value && (value.customers?.length || value.services?.length || value.invoices?.length || value.payments?.length));
+  const cache = (value) => { localStorage.setItem('ellext-billing-data', JSON.stringify(value)); localStorage.setItem('ellext-billing-data-version', LIVE_DATA_VERSION); };
+  const saveRemote = async (value) => {
+    const response = await fetch(`${api}/workspace`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ data: value }) });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error?.message || 'Shared workspace sync failed.');
+  };
+  const refresh = async () => {
+    try {
+      const response = await fetch(`${api}/workspace`, { credentials: 'include' });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error?.message || 'Shared workspace unavailable.');
+      const remote = payload.data?.workspace;
+      const local = readLocal();
+      const next = remote ? statusV2NormalizeData(remote) : (hasLocalRecords(local) ? local : statusV2NormalizeData(seed));
+      if (!remote || hasLocalRecords(local) && !remote) await saveRemote(next);
+      cache(next);
+      setData(next);
+      setSyncError('');
+    } catch (error) {
+      const local = readLocal();
+      setData(local || statusV2NormalizeData(seed));
+      setSyncError(error instanceof Error ? error.message : 'Shared workspace unavailable.');
+    } finally { setLoading(false); }
+  };
+  useEffect(() => {
+    let active = true;
+    const run = () => { if (active) refresh(); };
+    run();
+    const onFocus = () => run();
+    window.addEventListener('focus', onFocus);
+    const timer = window.setInterval(run, 15000);
+    return () => { active = false; window.removeEventListener('focus', onFocus); window.clearInterval(timer); };
+  }, [api]);
+  const commit = (next) => { const normalized = statusV2NormalizeData(next); setData(normalized); cache(normalized); saveRemote(normalized).catch((error) => setSyncError(error instanceof Error ? error.message : 'Shared workspace sync failed.')); };
+  const update = (key, value) => { if (!data) return; commit({ ...data, [key]: value }); };
+  return { data, loading, syncError, commit, update, refresh };
 }
 const statusV2Rows = (data) => {
   const customerMap = Object.fromEntries(data.customers.map((c) => [c.id, c]));
@@ -256,14 +293,19 @@ const statusV2Audit = (data, entity, entityId, previousStatus, newStatus, reason
 const statusV2CustomerOutstanding = (rows, customerId) => rows.filter((i) => i.customerId === customerId && i.status !== 'CANCELLED').reduce((sum, i) => sum + i.calc.balance, 0);
 const statusV2InvoiceStatusOptions = () => STATUS_V2_INVOICE;
 const statusV2ManualStatusOptions = () => STATUS_V2_INVOICE;
+const UserContext = React.createContext(null);
+const userDisplayName = (user) => user?.full_name?.trim() || user?.email?.split('@')[0] || 'User';
+const userInitials = (user) => userDisplayName(user).split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'U';
 
 function StatusV2({ value }) { return <Status value={statusV2Label(value)} />; }
 function StatusFilterV2({ values, value, onChange }) { return <div className="status-filter-v2">{values.map((item) => <button key={item} className={item === value ? 'selected' : ''} onClick={() => onChange(item)}>{item === 'All' ? item : statusV2Label(item)}</button>)}</div>; }
 
-function DashboardV2({ data, rows, onOpen, onCreate }) {
+function DashboardV2({ data, rows, onOpen, onCreate, user }) {
+  const contextUser = React.useContext(UserContext);
+  const dashboardUser = user || contextUser;
   const valid = rows.filter((i) => i.status !== 'CANCELLED');
   const totals = valid.reduce((a, i) => ({ invoiced: a.invoiced + i.calc.total, paid: a.paid + i.calc.paid, pending: a.pending + (i.status === 'PENDING' ? i.calc.balance : 0), partial: a.partial + (i.status === 'PARTIALLY_PAID' ? i.calc.balance : 0), overdue: a.overdue + (i.status === 'OVERDUE' ? i.calc.balance : 0) }), { invoiced: 0, paid: 0, pending: 0, partial: 0, overdue: 0 });
-  return <><PageHeader eyebrow="Overview" title="Good morning, Arjun" description="Here’s the financial pulse of your workspace." action={<Button icon={Plus} onClick={onCreate}>Create invoice</Button>} /><section className="stats-grid"><Stat label="Total invoiced" value={formatShortMoney(totals.invoiced)} meta={`${valid.length} active invoices`} tone="beige" /><Stat label="Paid" value={formatShortMoney(totals.paid)} meta="Collected to date" tone="green" /><Stat label="Pending" value={formatShortMoney(totals.pending)} meta="Issued and unpaid" tone="amber" /><Stat label="Partially paid" value={formatShortMoney(totals.partial)} meta="Balance remaining" tone="blue" /><Stat label="Overdue" value={formatShortMoney(totals.overdue)} meta="Needs attention" tone="red" /></section><div className="dashboard-grid"><section className="panel span-2"><div className="panel-heading"><div><h2>Recent invoices</h2><p>Payment state is calculated from invoice payments.</p></div><button className="text-button" onClick={() => window.dispatchEvent(new CustomEvent('go-invoices'))}>View all <ArrowUpRight size={15} /></button></div><InvoiceTableV2 invoices={rows.slice(0, 5)} onOpen={onOpen} /></section><section className="panel"><div className="panel-heading"><div><h2>Recent payments</h2><p>Completed transactions</p></div><CreditCard size={17} /></div><div className="payment-list">{data.payments.filter((p) => p.status === 'COMPLETED').slice(0, 4).map((p) => { const inv = rows.find((i) => i.id === p.invoiceId); return <div className="payment-item" key={p.id}><div className="pay-icon"><ArrowDownToLine size={15} /></div><div><strong>{inv?.customer?.name || 'Customer'}</strong><small>{dateLabel(p.date)} · {p.method}</small></div><b>{formatShortMoney(p.amount)}</b></div>; })}</div></section></div></>;
+  return <><PageHeader eyebrow="Overview" title={`Good morning, ${userDisplayName(dashboardUser).split(/\s+/)[0]}`} description="Here’s the financial pulse of your workspace." action={<Button icon={Plus} onClick={onCreate}>Create invoice</Button>} /><section className="stats-grid"><Stat label="Total invoiced" value={formatShortMoney(totals.invoiced)} meta={`${valid.length} active invoices`} tone="beige" /><Stat label="Paid" value={formatShortMoney(totals.paid)} meta="Collected to date" tone="green" /><Stat label="Pending" value={formatShortMoney(totals.pending)} meta="Issued and unpaid" tone="amber" /><Stat label="Partially paid" value={formatShortMoney(totals.partial)} meta="Balance remaining" tone="blue" /><Stat label="Overdue" value={formatShortMoney(totals.overdue)} meta="Needs attention" tone="red" /></section><div className="dashboard-grid"><section className="panel span-2"><div className="panel-heading"><div><h2>Recent invoices</h2><p>Payment state is calculated from invoice payments.</p></div><button className="text-button" onClick={() => window.dispatchEvent(new CustomEvent('go-invoices'))}>View all <ArrowUpRight size={15} /></button></div><InvoiceTableV2 invoices={rows.slice(0, 5)} onOpen={onOpen} /></section><section className="panel"><div className="panel-heading"><div><h2>Recent payments</h2><p>Completed transactions</p></div><CreditCard size={17} /></div><div className="payment-list">{data.payments.filter((p) => p.status === 'COMPLETED').slice(0, 4).map((p) => { const inv = rows.find((i) => i.id === p.invoiceId); return <div className="payment-item" key={p.id}><div className="pay-icon"><ArrowDownToLine size={15} /></div><div><strong>{inv?.customer?.name || 'Customer'}</strong><small>{dateLabel(p.date)} · {p.method}</small></div><b>{formatShortMoney(p.amount)}</b></div>; })}</div></section></div></>;
 }
 
 function InvoiceTableV2({ invoices, onOpen, onPayment, onStatus }) { return <div className="table-wrap"><table className="status-table"><thead><tr><th>Invoice no.</th><th>Customer</th><th>Date</th><th>Due date</th><th className="number">Total</th><th className="number">Paid</th><th className="number">Balance</th><th>Status</th><th>Actions</th></tr></thead><tbody>{invoices.length ? invoices.map((i) => <tr key={i.id}><td><strong className="mono">{i.number}</strong></td><td><strong>{i.customer?.name || i.customerId}</strong><small>{i.customer?.gstin || 'Unregistered'}</small></td><td>{dateLabel(i.issueDate)}</td><td>{dateLabel(i.dueDate)}</td><td className="number">{formatMoney(i.calc.total)}</td><td className="number">{formatMoney(i.calc.paid)}</td><td className="number"><strong>{formatMoney(i.calc.balance)}</strong></td><td><StatusV2 value={i.status} /></td><td><div className="row-actions status-actions"><button className="text-button" onClick={() => onOpen(i)}>View</button>{i.status !== 'DRAFT' && i.status !== 'PAID' && i.status !== 'CANCELLED' && <button className="text-button" onClick={() => onPayment(i)}>Record payment</button>}<button className="text-button" onClick={() => onStatus(i)}>Change status</button></div></td></tr>) : <tr><td colSpan="9"><Empty title="No invoices found" copy="Try another status or create a new invoice." /></td></tr>}</tbody></table></div>; }
@@ -469,7 +511,7 @@ function AuthGate({ children }) {
   };
 
   if (state === 'checking') return <div className="auth-screen"><div className="auth-card"><div className="auth-brand"><img src={logo} alt="Ellext Marketing" /></div><p>Checking your secure session…</p></div></div>;
-  if (state === 'authenticated') return <><LiveUserLabels user={currentUser} /><button className="auth-logout" onClick={logout}>Logout</button>{children}</>;
+  if (state === 'authenticated') return <UserContext.Provider value={currentUser}><LiveUserLabels user={currentUser} /><button className="auth-logout" onClick={logout}>Logout</button>{children}</UserContext.Provider>;
 
   return <div className="auth-screen"><section className="auth-card"><div className="auth-brand"><img src={logo} alt="Ellext Marketing" /><small>Ellext Marketing Billing</small></div>
     {mode === 'login' && <><h1>Sign in</h1><p>Use your Ellext Marketing account to continue.</p><form className="auth-form" onSubmit={submitLogin}><label>Email<input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label><PasswordField label="Password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />{notice && <div className="auth-success">{notice}</div>}{error && <div className="auth-error">{error}</div>}<button className="button primary auth-submit" disabled={busy}>{busy ? 'Please wait…' : 'Sign in'}</button><div className="auth-actions"><button className="auth-link" type="button" onClick={() => showMode('forgot')}>Forgot password?</button><button className="auth-link" type="button" onClick={() => showMode('signup')}>Create an account</button></div></form></>}
