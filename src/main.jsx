@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { createPortal } from 'react-dom';
 import {
   Activity, Archive, ArrowDownToLine, ArrowUpRight, Bell, BriefcaseBusiness, CalendarDays,
   Check, ChevronDown, CircleHelp, ClipboardList, CreditCard, Download, FileDown, FileText,
@@ -164,7 +165,7 @@ function InvoiceModal({ invoice, settings, onClose }) {
     window.addEventListener('afterprint', clearPrintState, { once: true });
     requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
   };
-  return <div className="modal-backdrop" onClick={onClose}><div className="invoice-modal" onClick={(e) => e.stopPropagation()}><div className="modal-toolbar"><span>Invoice preview</span><div><Button variant="quiet" icon={Printer} onClick={printInvoice}>Print</Button><Button variant="quiet" icon={FileDown} onClick={printInvoice}>Download PDF</Button><button className="icon-button" onClick={onClose}><X size={18} /></button></div></div><InvoiceDocument invoice={invoice} settings={settings} calc={calc} /></div></div>;
+  return createPortal(<div className="modal-backdrop" onClick={onClose}><div className="invoice-modal" onClick={(e) => e.stopPropagation()}><div className="modal-toolbar"><span>Invoice preview</span><div><Button variant="quiet" icon={Printer} onClick={printInvoice}>Print</Button><Button variant="quiet" icon={FileDown} onClick={printInvoice}>Download PDF</Button><button className="icon-button" onClick={onClose}><X size={18} /></button></div></div><InvoiceDocument invoice={invoice} settings={settings} calc={calc} /></div></div>, document.body);
 }
 function InvoiceDocument({ invoice, settings, calc }) {
   const customer = invoice.customer || {};
