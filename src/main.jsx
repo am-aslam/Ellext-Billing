@@ -230,7 +230,6 @@ const statusV2CalculateInvoice = (invoice, customer, payments) => {
 const statusV2DerivedInvoiceStatus = (invoice, calc) => {
   const base = statusV2InvoiceKey(invoice.status);
   if (base === 'CANCELLED' || base === 'DRAFT') return base;
-  if (invoice.statusManual) return base;
   // Keep manual statuses, but never leave a paid or partially paid invoice in
   // a contradictory state after a completed payment is recorded.
   const total = Number(calc?.total ?? invoice.total ?? 0);
@@ -238,6 +237,7 @@ const statusV2DerivedInvoiceStatus = (invoice, calc) => {
   const balance = Math.max(0, total - paid);
   if (total > 0 && paid >= total - 0.01) return 'PAID';
   if (paid > 0 && balance > 0.01) return 'PARTIALLY_PAID';
+  if (invoice.statusManual) return base;
   return base;
 };
 const statusV2NormalizeData = (raw) => {
